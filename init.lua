@@ -48,6 +48,15 @@ local function paste_from_clipboard()
   vim.cmd('normal! "+p')
 end
 
+local function smart_close_buffer()
+  local bufs = vim.fn.getbufinfo({buflisted = 1})
+  if #bufs <= 1 then
+    vim.cmd('quit')
+  else
+    vim.cmd('bdelete')
+  end
+end
+
 vim.keymap.set('n', '<C-y>', yank_to_clipboard, {})
 vim.keymap.set('n', '<C-S-p>', paste_from_clipboard, {})
 
@@ -181,11 +190,12 @@ for i = 1, #modes do
   vim.keymap.set(modes[i], '<BS>', 'X', { desc = 'delete backward' })
   vim.keymap.set(modes[i], 'Y', 'y$', { desc = 'yank to EOL' })
   vim.keymap.set(modes[i], '<leader>fs', ':write<CR>', { desc = 'save file' })
-  vim.keymap.set(modes[i], '<leader>q', ':q!<CR>', { desc = 'quit no save' })
+  vim.keymap.set(modes[i], '<leader>q', smart_close_buffer, { desc = 'close buffer' })
   vim.keymap.set(modes[i], '<leader>j', 'o<Esc>k', { desc = 'insert line below' })
   vim.keymap.set(modes[i], '<leader>k', 'O<Esc>j', { desc = 'insert line above' })
   vim.keymap.set(modes[i], '<leader><BS>', ':tabclose<CR>', { desc = 'close tab' })
-  vim.keymap.set(modes[i], '<leader>t', ':tabnext<CR>', { desc = 'next tab' })
+  vim.keymap.set(modes[i], '<leader>t', ':BufferLineCycleNext<CR>', { desc = 'next buffer' })
+  vim.keymap.set(modes[i], '<leader>r', ':BufferLineCyclePrev<CR>', { desc = 'prev buffer' })
   -- Note: Re-sourcing not supported with lazy.nvim - restart nvim instead
   -- vim.keymap.set(modes[i], '<leader>so', ':source ~/.config/nvim/init.lua<CR>', { desc = 'reload config' })
   vim.keymap.set(modes[i], 'U', ':redo<CR>', { desc = 'redo' })
@@ -324,7 +334,7 @@ require('lazy').setup({
         { '<leader>f_', hidden = true },
         { '<leader>n', group = 'Angular' },
         { '<leader>n_', hidden = true },
-        { '<leader>r', group = 'Rename' },
+        { '<leader>r', group = 'Buffer Nav' },
         { '<leader>r_', hidden = true },
         { '<leader>s', group = 'Search' },
         { '<leader>s_', hidden = true },
@@ -933,6 +943,47 @@ require('lazy').setup({
     'akinsho/bufferline.nvim',
     version = '*',
     dependencies = 'nvim-tree/nvim-web-devicons',
+    config = function()
+      require('bufferline').setup({
+        options = {
+          mode = 'buffers',
+          numbers = 'none',
+          close_command = 'bdelete! %d',
+          right_mouse_command = 'bdelete! %d',
+          left_mouse_command = 'buffer %d',
+          middle_mouse_command = nil,
+          indicator = {
+            style = 'icon',
+            icon = '▎',
+          },
+          buffer_close_icon = '󰅖',
+          modified_icon = '●',
+          close_icon = '',
+          left_trunc_marker = '',
+          right_trunc_marker = '',
+          diagnostics = 'nvim_lsp',
+          diagnostics_indicator = function(count, level)
+            local icon = level:match('error') and ' ' or ' '
+            return ' ' .. icon .. count
+          end,
+          offsets = {
+            {
+              filetype = 'neo-tree',
+              text = 'File Explorer',
+              text_align = 'center',
+              separator = true,
+            },
+          },
+          show_buffer_icons = true,
+          show_buffer_close_icons = true,
+          show_close_icon = false,
+          show_tab_indicators = true,
+          separator_style = 'thin',
+          enforce_regular_tabs = false,
+          always_show_bufferline = true,
+        },
+      })
+    end,
   },
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
